@@ -41,11 +41,58 @@ public class StringReader<S extends CharSequence> {
         return c >= '0' && c <= '9';
     }
 
-    /// Returns the [CharPosition] of the `StringReader`.
+    /// Return the [CharPosition] of the `StringReader`.
     ///
+    /// ---
     /// @since `0.1.0`
     public @NotNull CharPosition<S> position() {
         return CharPosition.raw(this.source, this.position, this.column, this.line);
+    }
+
+    /// Branch the reader.
+    ///
+    /// ---
+    /// Produces a copy of the `StringReader` associated with the same source
+    /// that is positioned identically to this one.
+    ///
+    /// The following code branches the reader and aligns on success:
+    ///
+    /// ```java
+    /// var reader = new StringReader<>("foo");
+    /// var branch = reader.branch();
+    /// if (this.attemptRead(branch)) {
+    ///     reader.align(branch);
+    ///     // ...
+    /// }
+    /// ```
+    ///
+    /// @since `0.1.1`
+    public @NotNull StringReader<S> branch() {
+        return new StringReader<>(this.source, this.position, this.column, this.line);
+    }
+
+    /// Align the reader with the provided [CharPosition].
+    ///
+    /// ---
+    /// @since `0.1.1`
+    public @NotNull StringReader<S> align(@NotNull CharPosition<S> position) {
+        Objects.requireNonNull(position);
+        this.position = position.offset;
+        this.column   = position.column;
+        this.line     = position.line;
+        return this;
+    }
+
+    /// Align the reader with the provided `StringReader`.
+    ///
+    /// ---
+    /// @since `0.1.1`
+    public @NotNull StringReader<S> align(@NotNull StringReader<S> other) {
+        Objects.requireNonNull(other);
+        this.position = other.position;
+        this.column   = other.column;
+        this.line     = other.line;
+        return this;
     }
 
     /// Compute a [CharRange] from the given [CharPosition] to the current position of the `StringReader`.
