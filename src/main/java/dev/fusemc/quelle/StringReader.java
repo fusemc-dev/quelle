@@ -8,6 +8,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 import java.util.function.IntPredicate;
 
+/// A progressive reader through a [CharSequence].
+///
+/// ---
+/// Represents a position in a source [CharSequence] [S] and exposes
+/// primitives for navigating through the source imperatively.
+///
+/// @since `0.1.0`
 public class StringReader<S extends CharSequence> {
 
     private final @NotNull S source;
@@ -55,7 +62,7 @@ public class StringReader<S extends CharSequence> {
     ///
     /// @since `0.1.0`
     public @NotNull CharRange<S> range(@NotNull CharPosition<S> other) {
-        return new CharRange<>(this.source, other, this.position());
+        return CharRange.raw(this.source, other, this.position());
     }
 
     /// Compute a [CharRange] relative to the current position of the `StringReader`.
@@ -92,7 +99,7 @@ public class StringReader<S extends CharSequence> {
             }
             column++;
         }
-        return new CharRange<>(this.source, this.position(), CharPosition.raw(
+        return CharRange.raw(this.source, this.position(), CharPosition.raw(
                 this.source, position, column, line
         ));
     }
@@ -117,10 +124,10 @@ public class StringReader<S extends CharSequence> {
         var position = this.position();
         var c = this.peek();
         if (c == '\n')
-            return new CharRange<>(this.source, position, CharPosition.raw(
+            return CharRange.raw(this.source, position, CharPosition.raw(
                     this.source, this.position + 1, 1, this.line + 1
             ));
-        return new CharRange<>(this.source, position, CharPosition.raw(
+        return CharRange.raw(this.source, position, CharPosition.raw(
                 this.source, this.position + Character.charCount(c), this.column + 1, this.line
         ));
     }
@@ -304,9 +311,10 @@ public class StringReader<S extends CharSequence> {
         return Double.parseDouble(buffer.toString());
     }
 
-    /// Returns the code point the `StringReader` is pointing to.
+    /// Return the Unicode **code point** the `StringReader` is pointing to.
     ///
-    /// If the code point is a carriage-return (`\r`), it is normalized to a line feed (`\n`).
+    /// ---
+    /// When pointing to a carriage return (`\r`), it is normalized to a line feed (`\n`).
     ///
     /// @since `0.1.0`
     public int peek() {
@@ -356,8 +364,9 @@ public class StringReader<S extends CharSequence> {
         return new String(buffer, 0, count);
     }
 
-    /// Determines if the `StringReader` is pointing to a given `point`.
+    /// Determine whether the `StringReader` is pointing to the given `point`.
     ///
+    /// ---
     /// When pointing to the end of the source, `false` is returned.
     ///
     /// @since `0.1.0`
@@ -365,16 +374,23 @@ public class StringReader<S extends CharSequence> {
         return this.canRead() && this.peek() == point;
     }
 
+    /// Determine whether the `StringReader` is pointing to a Unicode **code point** that satisfies the given `predicate`.
+    ///
+    /// ---
+    ///
+    /// When pointing to the end of the source, `false` is returned.
+    ///
+    /// @since `0.1.0`
     public boolean isAt(@NotNull IntPredicate predicate) {
         Objects.requireNonNull(predicate);
         return this.canRead() && predicate.test(this.peek());
     }
 
-    /// Skips over the consecutive whitespace.
+    /// Skip over the consecutive whitespace.
     ///
-    /// Consumes the source as long as the code point the reader is pointing to
-    /// is recognized as whitespace by [Character#isWhitespace(int)], and returns
-    /// whether the source is still readable.
+    /// ---
+    /// Consumes the source while pointing to a {@linkplain Character#isWhitespace(int) whitespace} Unicode code point,
+    /// then returns whether the source is still readable afterwards.
     ///
     /// @since `0.1.0`
     public boolean skipWhitespace() {
@@ -383,13 +399,18 @@ public class StringReader<S extends CharSequence> {
         return this.canRead();
     }
 
-    /// Determines whether the source is still readable.
+    /// Determine whether the source is still readable.
     ///
+    /// ---
     /// @since `0.1.0`
     public boolean canRead() {
         return this.position < this.source.length();
     }
 
+    /// Determine whether `amount` Unicode **code points** can still be read from the source.
+    ///
+    /// ---
+    /// @since `0.1.0`
     public boolean canRead(int amount) {
         var position = this.position;
         while (--amount > 0)

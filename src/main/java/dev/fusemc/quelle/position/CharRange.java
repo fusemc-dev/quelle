@@ -2,7 +2,6 @@ package dev.fusemc.quelle.position;
 
 import com.manchickas.crayon.Crayon;
 import com.manchickas.crayon.Style;
-import dev.fusemc.quelle.Quelle;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -23,12 +22,21 @@ public final class CharRange<S extends CharSequence> {
     private final @NotNull CharPosition<S> begin;
     private final @NotNull CharPosition<S> end;
 
-    public CharRange(@NotNull S source,
+    private CharRange(@NotNull S source,
                      @NotNull CharPosition<S> begin,
                      @NotNull CharPosition<S> end) {
         this.source = Objects.requireNonNull(source);
         this.begin  = Objects.requireNonNull(begin);
         this.end    = Objects.requireNonNull(end);
+    }
+
+    public static <S extends CharSequence> @NotNull CharRange<S> raw(@NotNull S source,
+                                                                     @NotNull CharPosition<S> begin,
+                                                                     @NotNull CharPosition<S> end) {
+        Objects.requireNonNull(source);
+        Objects.requireNonNull(begin);
+        Objects.requireNonNull(end);
+        return new CharRange<>(source, begin, end);
     }
 
     public static <S extends CharSequence> @NotNull CharRange<S> compute(@NotNull S source, int begin, int end) {
@@ -37,6 +45,13 @@ public final class CharRange<S extends CharSequence> {
                 CharPosition.compute(source, begin),
                 CharPosition.compute(source, end)
         );
+    }
+
+    @ApiStatus.Internal
+    private static int width(int i) {
+        if (i == 0)
+            return 1;
+        return (int) Math.floor(Math.log10(i)) + 1;
     }
 
     /// Build a **diagnostics excerpt** for the `CharRange`.
@@ -91,7 +106,7 @@ public final class CharRange<S extends CharSequence> {
         Objects.requireNonNull(rest);
         var buffer   = new StringBuilder();
         var position = this.precedingLine();
-        var width    = Quelle.width(Math.max(this.begin.line, this.end.line));
+        var width    = CharRange.width(Math.max(this.begin.line, this.end.line));
         var line     = this.begin.line;
         while (position < this.end.offset) {
             var content   = new StringBuilder();
@@ -133,6 +148,20 @@ public final class CharRange<S extends CharSequence> {
         return buffer.toString();
     }
 
+    /// Returns the conbtent of the `CharRange`.
+    ///
+    /// ---
+    ///
+    /// The following code reads an identifier from the source:
+    /// ```java
+    /// var reader     = new StringReader<>("foo");
+    /// var position   = reader.position();
+    /// var _          = reader.readIdentifier();
+    /// var range      = reader.range(position);
+    /// var identifier = range.content();
+    /// ```
+    ///
+    /// @since `0.1.0`
     public @NotNull String content() {
         var buffer = new StringBuilder();
         for (var position = this.begin.offset; position < this.end.offset;) {
